@@ -192,7 +192,9 @@ class build_info:
 					else:
 						program_files_folder = "C:\Program Files"
 
-					if ("VS140COMNTOOLS" in env) or os.path.exists(program_files_folder + "\\Microsoft Visual Studio 14.0\\VC\\VCVARSALL.BAT"):
+					if ("VS150COMNTOOLS" in env) or os.path.exists(program_files_folder + "\\Microsoft Visual Studio\\2017\\Enterprise\\VC\\Auxiliary\\Build\\VCVARSALL.BAT"):
+						compiler = "vc141"
+					elif ("VS140COMNTOOLS" in env) or os.path.exists(program_files_folder + "\\Microsoft Visual Studio 14.0\\VC\\VCVARSALL.BAT"):
 						compiler = "vc140"
 					elif ("VS120COMNTOOLS" in env) or os.path.exists(program_files_folder + "\\Microsoft Visual Studio 12.0\\VC\\VCVARSALL.BAT"):
 						compiler = "vc120"
@@ -219,7 +221,19 @@ class build_info:
 			else:
 				program_files_folder = "C:\Program Files"
 
-			if "vc140" == compiler:
+			if "vc141" == compiler:
+				if "VS150COMNTOOLS" in env:
+					compiler_root = env["VS150COMNTOOLS"] + "..\\..\\VC\\Auxiliary\\Build\\"
+					vcvarsall_path = "VCVARSALL.BAT"
+				else:
+					try_folder = program_files_folder + "\\Microsoft Visual Studio\\2017\\Enterprise\\VC\\Auxiliary\\Build\\"
+					try_vcvarsall = "VCVARSALL.BAT"
+					if os.path.exists(try_folder + try_vcvarsall):
+						compiler_root = try_folder
+						vcvarsall_path = try_vcvarsall
+					else:
+						log_error("Can't find the compiler.\n")
+			elif "vc140" == compiler:
 				if "VS140COMNTOOLS" in env:
 					compiler_root = env["VS140COMNTOOLS"] + "..\\..\\VC\\bin\\"
 					vcvarsall_path = "..\\VCVARSALL.BAT"
@@ -262,7 +276,9 @@ class build_info:
 			toolset = "auto"
 		elif ("" == toolset) or ("auto" == toolset):
 			if 0 == target_platform.find("win"):
-				if "vc140" == compiler:
+				if "vc141" == compiler:
+					toolset = "v141"
+				elif "vc140" == compiler:
 					toolset = "v140"
 				elif "vc120" == compiler:
 					toolset = "v120"
@@ -281,7 +297,19 @@ class build_info:
 
 		multi_config = False
 		compilers = []
-		if "vc140" == compiler:
+		if "vc141" == compiler:
+			compiler_name = "vc"
+			compiler_version = 141
+			multi_config = True
+			for arch in archs:
+				if "x86" == arch:
+					gen_name = "Visual Studio 15"
+				elif "arm" == arch:
+					gen_name = "Visual Studio 15 ARM"
+				elif "x64" == arch:
+					gen_name = "Visual Studio 15 Win64"
+				compilers.append(compiler_info(arch, gen_name, toolset, compiler_root, vcvarsall_path))
+		elif "vc140" == compiler:
 			compiler_name = "vc"
 			compiler_version = 140
 			multi_config = True
